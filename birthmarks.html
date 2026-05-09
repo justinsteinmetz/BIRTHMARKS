@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIRTHMARKS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg:       #f5f0e8;
+  --surface:  #ede8dc;
+  --panel:    #e4ddd0;
+  --border:   #c8bfae;
+  --border-hi:#a89880;
+  --text:     #1a1610;
+  --muted:    #6e6050;
+  --faint:    #a89878;
+  --dim:      #d4cbbA;
+  --ink:      #12100c;
+  --sepia:    #8b6840;
+  --sepia-dim:#f0e8d8;
+  --red:      #6b1a1a;
+  --red-dim:  #f0e4dc;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Aged paper texture */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  background-size: 512px;
+  pointer-events: none; z-index: 0;
+  mix-blend-mode: multiply;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(18,14,8,0.12) 100%);
+  pointer-events: none; z-index: 0;
+}
+
+.screen { display: none; position: relative; z-index: 1; }
+.screen.active { display: flex; }
+
+/* ── PROGRESS ── */
+.prog-wrap {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 1px; background: transparent; z-index: 200;
+}
+.prog-fill {
+  height: 100%; background: var(--sepia);
+  transition: width 1s ease; width: 0%;
+}
+
+/* ── MONO UTILITY ── */
+.mono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 300;
+}
+
+/* ── INTRO ── */
+#intro {
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 6vw, 5rem);
+  max-width: 820px; margin: 0 auto; width: 100%;
+}
+
+.intro-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding-bottom: 2rem; border-bottom: 1px solid var(--border);
+}
+
+.intro-provenance {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--faint);
+  line-height: 2;
+}
+
+.intro-ref {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; letter-spacing: 0.14em;
+  color: var(--dim); text-align: right; line-height: 2;
+}
+
+.intro-body {
+  flex: 1; display: flex; flex-direction: column;
+  justify-content: center; padding: 4rem 0 3rem;
+}
+
+.intro-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(2.4rem, 7vw, 8rem);
+  line-height: 0.88; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+
+.intro-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-weight: 300;
+  font-size: clamp(1rem, 2.2vw, 1.4rem);
+  color: var(--muted); margin-bottom: 3rem;
+  letter-spacing: 0.04em;
+}
+
+.intro-premise {
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  line-height: 2; color: var(--muted);
+  max-width: 500px; margin-bottom: 3rem;
+  font-weight: 300;
+}
+.intro-premise strong { color: var(--text); font-weight: 400; }
+
+/* Archive contents list */
+.archive-contents {
+  border: 1px solid var(--border);
+  background: var(--surface); margin-bottom: 3rem;
+}
+
+.archive-contents-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--faint);
+  padding: 0.55rem 1rem; border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  display: flex; justify-content: space-between;
+}
+
+.archive-section-list {
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+
+.archive-section-item {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--dim);
+  border-right: 1px solid var(--dim);
+  display: flex; gap: 0.7rem; align-items: baseline;
+}
+.archive-section-item:nth-child(even) { border-right: none; }
+.archive-section-item:nth-last-child(-n+2) { border-bottom: none; }
+
+.section-numeral {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; color: var(--dim); flex-shrink: 0;
+  letter-spacing: 0.1em;
+}
+
+.section-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.9rem; color: var(--muted);
+  font-style: italic;
+}
+
+.begin-btn {
+  background: var(--ink); color: var(--bg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.54rem; letter-spacing: 0.28em;
+  text-transform: uppercase; padding: 0.85rem 2rem;
+  border: none; cursor: pointer; transition: background 0.2s;
+  display: inline-block; align-self: flex-start;
+}
+.begin-btn:hover { background: var(--sepia); }
+
+.intro-footer {
+  padding-top: 1.5rem; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 0.5rem;
+}
+
+.intro-footer-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.1em; color: var(--dim);
+}
+
+/* ── ARCHIVE ROOM ── */
+#room {
+  min-height: 100vh;
+  flex-direction: column; justify-content: center;
+  padding: clamp(3rem, 7vw, 5.5rem) clamp(2rem, 6vw, 5rem);
+  max-width: 760px; margin: 0 auto; width: 100%;
+}
+
+.room-hud {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4rem; padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.room-section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem; letter-spacing: 0.24em;
+  text-transform: uppercase; color: var(--faint);
+}
+
+.room-counter {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; letter-spacing: 0.14em; color: var(--dim);
+}
+
+/* Section heading */
+.section-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300; font-style: italic;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1; letter-spacing: 0.06em;
+  color: var(--ink); margin-bottom: 0.5rem;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.section-heading.visible { opacity: 1; transform: translateY(0); }
+
+.section-epigraph {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  font-style: italic; color: var(--muted);
+  line-height: 1.7; margin-bottom: 3rem;
+  opacity: 0; transition: opacity 0.5s ease 0.1s;
+}
+.section-epigraph.visible { opacity: 1; }
+
+/* Prompts */
+.prompts-wrap {
+  display: flex; flex-direction: column; gap: 2rem;
+  opacity: 0; transform: translateY(5px);
+  transition: opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;
+}
+.prompts-wrap.visible { opacity: 1; transform: translateY(0); }
+
+.prompt-block { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.prompt-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--faint);
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.prompt-label::after { content: ''; flex: 1; height: 1px; background: var(--dim); }
+
+.prompt-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.6; color: var(--text); font-weight: 400;
+}
+
+.prompt-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.88rem; font-style: italic;
+  color: var(--muted); line-height: 1.6;
+}
+
+.archive-input {
+  width: 100%; background: transparent;
+  border: none; border-bottom: 1px solid var(--border);
+  color: var(--ink); font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem); font-weight: 300;
+  padding: 0.6rem 0; resize: none; outline: none;
+  line-height: 1.9; transition: border-color 0.3s;
+  min-height: 70px;
+}
+.archive-input:focus { border-bottom-color: var(--sepia); }
+.archive-input::placeholder { color: var(--dim); font-style: italic; }
+
+.input-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.1em;
+  color: var(--dim); min-height: 1em;
+}
+
+/* Nav */
+.room-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 3.5rem; padding-top: 1.2rem;
+  border-top: 1px solid var(--dim);
+}
+
+.nav-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.1em; color: var(--dim);
+}
+
+.nav-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.52rem; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 0.5rem 1.1rem; cursor: pointer; transition: all 0.18s;
+}
+.nav-btn:hover:not(:disabled) { border-color: var(--sepia); color: var(--sepia); }
+.nav-btn:disabled { opacity: 0.18; cursor: default; pointer-events: none; }
+.nav-btn.primary {
+  background: var(--ink); color: var(--bg); border-color: var(--ink);
+}
+.nav-btn.primary:hover { background: var(--sepia); border-color: var(--sepia); }
+
+/* Processing */
+.processing {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.48rem; letter-spacing: 0.18em; color: var(--muted);
+  text-transform: uppercase;
+}
+.dots-inline {
+  display: inline-flex; gap: 0.25rem;
+  margin-left: 0.35rem; vertical-align: middle;
+}
+.dots-inline span {
+  width: 3px; height: 3px; background: var(--muted); border-radius: 50%;
+  animation: dp 1.2s ease-in-out infinite;
+}
+.dots-inline span:nth-child(2) { animation-delay: 0.2s; }
+.dots-inline span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dp {
+  0%,100% { opacity: 0.18; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ── READING SCREEN ── */
+#reading {
+  min-height: 100vh; flex-direction: column; justify-content: center;
+  padding: clamp(2rem, 6vw, 5rem); max-width: 760px; margin: 0 auto; width: 100%;
+}
+.reading-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.48rem; letter-spacing: 0.32em;
+  color: var(--dim); text-transform: uppercase; margin-bottom: 1.5rem;
+}
+.reading-dots { display: flex; gap: 0.5rem; }
+.reading-dots span {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--sepia);
+  animation: dp 1.4s ease-in-out infinite;
+}
+.reading-dots span:nth-child(2) { animation-delay: 0.25s; }
+.reading-dots span:nth-child(3) { animation-delay: 0.5s; }
+
+/* ── RECORD SCREEN ── */
+#record {
+  min-height: 100vh; flex-direction: column; justify-content: flex-start;
+  padding: clamp(4rem, 8vw, 6rem) clamp(2rem, 6vw, 5rem) 7rem;
+  max-width: 760px; margin: 0 auto; width: 100%;
+}
+
+.record-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 3.5rem; padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.record-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 300; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--ink);
+}
+
+.record-stamp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.1em;
+  color: var(--dim); text-align: right; line-height: 2;
+  white-space: pre;
+}
+
+/* Archive entries */
+.archive-entries {
+  display: flex; flex-direction: column; gap: 0;
+  border: 1px solid var(--border);
+  opacity: 0; transition: opacity 1s ease;
+}
+.archive-entries.visible { opacity: 1; }
+
+.archive-entry {
+  border-bottom: 1px solid var(--dim);
+}
+.archive-entry:last-child { border-bottom: none; }
+
+.archive-entry-header {
+  padding: 0.6rem 1.2rem; background: var(--panel);
+  border-bottom: 1px solid var(--dim);
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.ae-section-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic; font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.ae-section-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.42rem; color: var(--dim); letter-spacing: 0.1em;
+}
+
+.archive-entry-prompts {
+  display: flex; flex-direction: column; gap: 0;
+}
+
+.ae-prompt-row {
+  padding: 0.75rem 1.2rem;
+  border-bottom: 1px solid var(--dim);
+}
+.ae-prompt-row:last-child { border-bottom: none; }
+
+.ae-prompt-q {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; color: var(--faint);
+  letter-spacing: 0.1em; margin-bottom: 0.3rem; line-height: 1.6;
+}
+
+.ae-prompt-a {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.92rem; color: var(--text);
+  line-height: 1.75; font-weight: 300;
+}
+
+/* Reading / Portrait */
+.reading-rule {
+  width: 0; height: 1px; background: var(--sepia);
+  margin: 3.5rem 0;
+  opacity: 0; transition: opacity 0.6s ease, width 1.2s ease 0.3s;
+}
+.reading-rule.visible { opacity: 1; width: 100%; }
+
+.reading-section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.46rem; letter-spacing: 0.26em;
+  text-transform: uppercase; color: var(--sepia);
+  margin-bottom: 1.2rem;
+  opacity: 0; transition: opacity 0.6s ease;
+}
+.reading-section-label.visible { opacity: 1; }
+
+.portrait-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  line-height: 2.1; color: var(--text);
+  font-weight: 300; white-space: pre-wrap;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.portrait-text.visible { opacity: 1; }
+
+.headline-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  font-weight: 300; font-style: italic;
+  line-height: 1.2; color: var(--ink);
+  letter-spacing: 0.02em;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.headline-text.visible { opacity: 1; }
+
+.signature-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  font-style: italic; line-height: 1.9;
+  color: var(--sepia); border-left: 1px solid var(--border);
+  padding-left: 1.2rem;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.signature-text.visible { opacity: 1; }
+
+/* Discussion questions */
+.discussion-wrap {
+  margin-top: 2.5rem; border: 1px solid var(--border);
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.discussion-wrap.visible { opacity: 1; }
+
+.discussion-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.55rem 1.2rem; background: var(--panel);
+  border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 0.4rem;
+}
+
+.discussion-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.discussion-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.4rem; letter-spacing: 0.1em; color: var(--dim);
+}
+
+.disc-item {
+  display: flex; gap: 0.8rem; align-items: flex-start;
+  padding: 0.8rem 1.2rem; border-bottom: 1px solid var(--dim);
+  background: var(--surface);
+}
+.disc-item:last-child { border-bottom: none; }
+
+.disc-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.42rem; color: var(--dim); flex-shrink: 0; padding-top: 0.2rem;
+}
+
+.disc-q {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.95rem; color: var(--text); line-height: 1.7;
+}
+
+/* Footer */
+.record-footer {
+  margin-top: 3.5rem; padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 0.8rem;
+  opacity: 0; transition: opacity 0.8s ease;
+}
+.record-footer.visible { opacity: 1; }
+
+.footer-note {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.44rem; letter-spacing: 0.1em; color: var(--dim);
+  font-style: italic;
+}
+
+.restart-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.5rem; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 0.5rem 1rem; cursor: pointer; transition: all 0.2s;
+}
+.restart-btn:hover { border-color: var(--sepia); color: var(--sepia); }
+
+@media (max-width: 580px) {
+  .archive-section-list { grid-template-columns: 1fr; }
+  .archive-section-item { border-right: none; }
+  .archive-section-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--dim); }
+  .archive-section-item:last-child { border-bottom: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+
+<!-- INTRO -->
+<div id="intro" class="screen active">
+  <div class="intro-header">
+    <div class="intro-provenance">
+      Identity &amp; Society · Grades 11–12<br>
+      An archival instrument
+    </div>
+    <div class="intro-ref" id="sessionId"></div>
+  </div>
+
+  <div class="intro-body">
+    <div class="intro-title">Birthmarks</div>
+    <div class="intro-tagline">What was written before you spoke.</div>
+
+    <p class="intro-premise">
+      Before you formed your own understanding of the world, certain stories were already attached to you. Some were inherited through family and culture. Others were projected onto you by institutions and other people.<br><br>
+      You are not being asked to defend yourself.<br>
+      You are being asked to <strong>assemble a record</strong> — of names, places, languages, stories, silences, and marks.<br><br>
+      <em>Partial knowledge is a legitimate entry. "I don't know" is a legitimate entry. Incomplete archives are real archives.</em><br><br>
+      At the end, the archive will be read.
+    </p>
+
+    <div class="archive-contents">
+      <div class="archive-contents-header">
+        <span>Archive sections</span>
+        <span>6 entries</span>
+      </div>
+      <div class="archive-section-list">
+        <div class="archive-section-item"><span class="section-numeral">I</span><span class="section-name">Family &amp; Name</span></div>
+        <div class="archive-section-item"><span class="section-numeral">II</span><span class="section-name">Place &amp; Language</span></div>
+        <div class="archive-section-item"><span class="section-numeral">III</span><span class="section-name">Stories</span></div>
+        <div class="archive-section-item"><span class="section-numeral">IV</span><span class="section-name">Silences</span></div>
+        <div class="archive-section-item"><span class="section-numeral">V</span><span class="section-name">How Others Read You</span></div>
+        <div class="archive-section-item"><span class="section-numeral">VI</span><span class="section-name">What Continues</span></div>
+      </div>
+    </div>
+
+    <button class="begin-btn" onclick="beginArchive()">Open the archive →</button>
+  </div>
+
+  <div class="intro-footer">
+    <div class="intro-footer-note">The archive is yours. You decide what leaves this room.</div>
+    <div class="intro-footer-note">Some marks are visible. Others are carried in stories, silences, and assumptions.</div>
+  </div>
+</div>
+
+<!-- ARCHIVE ROOM -->
+<div id="room" class="screen">
+  <div class="room-hud">
+    <div class="room-section-label" id="sectionLabel">Section I — Name</div>
+    <div class="room-counter" id="roomCounter">1 of 6</div>
+  </div>
+
+  <div class="section-heading" id="sectionHeading"></div>
+  <div class="section-epigraph" id="sectionEpigraph"></div>
+  <div class="prompts-wrap" id="promptsWrap"></div>
+
+  <div class="room-nav">
+    <div class="nav-note" id="navNote"></div>
+    <button class="nav-btn primary" id="nextBtn" onclick="nextSection()" disabled>Next →</button>
+  </div>
+</div>
+
+<!-- READING -->
+<div id="reading" class="screen">
+  <div class="reading-label">Reading the archive</div>
+  <div class="reading-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- RECORD -->
+<div id="record" class="screen">
+  <div class="record-header">
+    <div class="record-title">Birthmarks</div>
+    <div class="record-stamp" id="recordStamp"></div>
+  </div>
+
+  <div class="archive-entries" id="archiveEntries"></div>
+
+  <div class="reading-rule" id="readingRule"></div>
+  <div class="reading-section-label" id="readingLabel">Archivist's reading</div>
+  <div class="headline-text" id="headlineText"></div>
+  <div style="height:1.5rem;"></div>
+  <div class="portrait-text" id="portraitText"></div>
+  <div style="height:1.5rem;"></div>
+  <div class="signature-text" id="signatureText"></div>
+
+  <div class="discussion-wrap" id="discussionWrap">
+    <div class="discussion-header">
+      <div class="discussion-label">For discussion</div>
+      <div class="discussion-note">Derived from this archive · for teacher use</div>
+    </div>
+    <div id="discussionList"></div>
+  </div>
+
+  <div class="record-footer" id="recordFooter">
+    <div class="footer-note">Some marks are visible. Others are carried in stories, silences, and assumptions.</div>
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+      <button class="restart-btn" onclick="window.print()">Save / Print</button>
+      <button class="restart-btn" onclick="restart()">Open again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROXY = "https://anthropic-proxy.justin-steinmetz.workers.dev";
+
+document.getElementById('sessionId').textContent =
+  'BM-' + Math.random().toString(36).slice(2,5).toUpperCase() + '-' +
+  Math.random().toString(36).slice(2,5).toUpperCase();
+
+// ── ARCHIVE SECTIONS ──
+const SECTIONS = [
+  {
+    num: 'I', name: 'Family & Name',
+    heading: 'Family & Name',
+    epigraph: 'Every family is an archive. A name is the first entry.',
+    prompts: [
+      {
+        label: 'The name',
+        q: 'Who chose your name, and why? What does it carry — what does it signal to others before you\'ve spoken?',
+        sub: 'If you don\'t know the full story, say what you\'ve been told — or that you\'ve never been told.',
+        min: 25
+      },
+      {
+        label: 'The transmission',
+        q: 'What was passed down to you — a value, a fear, a way of being in the world, a role in the family — without being stated directly? What did your family carry from a generation before yours that still shapes something in you?',
+        sub: 'Migration, loss, class, religion, silence, pride — name it as specifically as you can.',
+        min: 30
+      }
+    ]
+  },
+  {
+    num: 'II', name: 'Place & Language',
+    heading: 'Place & Language',
+    epigraph: 'Where you are from is never only geography. Which words feel inherited rather than learned?',
+    prompts: [
+      {
+        label: 'Place',
+        q: 'Where are you from? Write the answer you give in different contexts — the short version, the longer one, the one you don\'t always use. What does your place of origin mean to people who don\'t share it?',
+        sub: null,
+        min: 25
+      },
+      {
+        label: 'Language',
+        q: 'Name the languages in your life — fluent, partial, lost, or inherited. Do you speak differently in different contexts? Is there a word in any language that carries a weight no translation captures?',
+        sub: 'Include languages you understand but don\'t speak, or spoke as a child and no longer do. If there is no such word, say what that absence might mean.',
+        min: 20
+      }
+    ]
+  },
+  {
+    num: 'III', name: 'Stories',
+    heading: 'Stories',
+    epigraph: 'The stories told repeatedly are the ones that need to be believed.',
+    prompts: [
+      {
+        label: 'The founding story',
+        q: 'What story about your family or where you come from has been told to you repeatedly? What does that story do — what does it explain, justify, or protect?',
+        sub: null,
+        min: 35
+      },
+      {
+        label: 'The national story',
+        q: 'What is the story your country tells about itself? Which part of that story do you carry, and which part do you resist?',
+        sub: null,
+        min: 25
+      }
+    ]
+  },
+  {
+    num: 'IV', name: 'Silences',
+    heading: 'Silences',
+    epigraph: 'What is present but rarely explained is still present.',
+    prompts: [
+      {
+        label: 'The gap',
+        q: 'What is something significant in your family history that is present — as an absence, a discomfort, a subject that closes — but rarely explained?',
+        sub: 'You don\'t need to know the full story. Name what you notice.',
+        min: 20
+      },
+      {
+        label: 'What the silence protects',
+        q: 'What do you think the silence is protecting? Name your best guess, even if you\'re uncertain. Then: what have you written around in this archive so far rather than directly at?',
+        sub: null,
+        min: 20
+      }
+    ]
+  },
+  {
+    num: 'V', name: 'How Others Read You',
+    heading: 'How Others Read You',
+    epigraph: 'A mark is not only what you carry. It is what others see.',
+    prompts: [
+      {
+        label: 'The first reading',
+        q: 'What do people assume about you before you\'ve spoken? Name the assumptions — accurate and inaccurate.',
+        sub: null,
+        min: 25
+      },
+      {
+        label: 'The misreading',
+        q: 'Describe a time you were read incorrectly — placed in the wrong category, assigned the wrong meaning. What mark were they reading? Is there a version of yourself you present in certain contexts to control how you\'re read?',
+        sub: null,
+        min: 25
+      }
+    ]
+  },
+  {
+    num: 'VI', name: 'What Continues',
+    heading: 'What Continues',
+    epigraph: 'The archive does not end with you.',
+    prompts: [
+      {
+        label: 'Active inheritance',
+        q: 'Which marks from this archive are you still running — in how you see others, in what you expect, in what you assume?',
+        sub: 'Be concrete. Not structural — personal.',
+        min: 30
+      },
+      {
+        label: 'The unread mark',
+        q: 'Which part of this inheritance are you actively trying to revise — and what is making that difficult? What part of your archive do you still not fully understand?',
+        sub: null,
+        min: 20
+      }
+    ]
+  }
+];
+
+const TOTAL_SECTIONS = SECTIONS.length;
+let currentSection = 0;
+let sectionAnswers = SECTIONS.map(s => s.prompts.map(() => ''));
+
+// Dynamic intro count
+document.querySelector('.archive-contents-header span:last-child')
+  .textContent = `${SECTIONS.length} entries`;
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function beginArchive() {
+  show('room');
+  renderSection(0);
+}
+
+function renderSection(index) {
+  currentSection = index;
+  const s = SECTIONS[index];
+
+  document.getElementById('progFill').style.width = (index / TOTAL_SECTIONS * 100) + '%';
+  document.getElementById('sectionLabel').textContent = `Section ${s.num} — ${s.name}`;
+  document.getElementById('roomCounter').textContent = `${index + 1} of ${TOTAL_SECTIONS}`;
+
+  const heading = document.getElementById('sectionHeading');
+  const epigraph = document.getElementById('sectionEpigraph');
+  const promptsWrap = document.getElementById('promptsWrap');
+  const nextBtn = document.getElementById('nextBtn');
+  const navNote = document.getElementById('navNote');
+
+  heading.classList.remove('visible');
+  epigraph.classList.remove('visible');
+  promptsWrap.classList.remove('visible');
+
+  nextBtn.textContent = index === TOTAL_SECTIONS - 1 ? 'Close the archive →' : 'Next section →';
+  nextBtn.disabled = true;
+  navNote.textContent = '"I don\'t know" is a legitimate entry.';
+
+  setTimeout(() => {
+    heading.textContent = s.heading;
+    epigraph.textContent = s.epigraph;
+    buildPrompts(s, index, promptsWrap);
+    heading.classList.add('visible');
+    setTimeout(() => epigraph.classList.add('visible'), 100);
+    setTimeout(() => {
+      promptsWrap.classList.add('visible');
+      checkSectionComplete(index);
+      const first = promptsWrap.querySelector('textarea');
+      if (first) setTimeout(() => first.focus(), 150);
+    }, 200);
+  }, 80);
+}
+
+function buildPrompts(s, secIndex, wrap) {
+  wrap.innerHTML = '';
+  s.prompts.forEach((p, pi) => {
+    const block = document.createElement('div');
+    block.className = 'prompt-block';
+
+    const label = document.createElement('div');
+    label.className = 'prompt-label';
+    label.textContent = p.label;
+
+    const qText = document.createElement('div');
+    qText.className = 'prompt-text';
+    qText.textContent = p.q;
+
+    block.appendChild(label);
+    block.appendChild(qText);
+
+    if (p.sub) {
+      const sub = document.createElement('div');
+      sub.className = 'prompt-sub';
+      sub.textContent = p.sub;
+      block.appendChild(sub);
+    }
+
+    const ta = document.createElement('textarea');
+    ta.className = 'archive-input';
+    ta.rows = 3;
+    ta.placeholder = 'Write here.';
+    ta.value = sectionAnswers[secIndex][pi] || '';
+
+    const hint = document.createElement('div');
+    hint.className = 'input-hint';
+
+    const minL = p.min || 0;
+    hint.textContent = (minL && ta.value.trim().length < minL) ? 'keep going' : '';
+
+    ta.addEventListener('input', e => {
+      sectionAnswers[secIndex][pi] = e.target.value;
+      hint.textContent = (minL && e.target.value.trim().length < minL) ? 'keep going' : '';
+      checkSectionComplete(secIndex);
+    });
+
+    block.appendChild(ta);
+    block.appendChild(hint);
+    wrap.appendChild(block);
+  });
+}
+
+function checkSectionComplete(secIndex) {
+  const s = SECTIONS[secIndex];
+  const allMet = s.prompts.every((p, pi) => {
+    const val = sectionAnswers[secIndex][pi] || '';
+    return val.trim().length >= (p.min || 0);
+  });
+  document.getElementById('nextBtn').disabled = !allMet;
+}
+
+function nextSection() {
+  // Collect current answers from DOM
+  const textareas = document.getElementById('promptsWrap').querySelectorAll('textarea');
+  textareas.forEach((ta, pi) => {
+    sectionAnswers[currentSection][pi] = ta.value;
+  });
+
+  if (currentSection === TOTAL_SECTIONS - 1) {
+    readArchive();
+  } else {
+    renderSection(currentSection + 1);
+  }
+}
+
+// ── READ THE ARCHIVE ──
+async function readArchive() {
+  document.getElementById('progFill').style.width = '100%';
+  show('reading');
+
+  // Build the archive record
+  const archiveText = SECTIONS.map((s, si) => {
+    const entries = s.prompts.map((p, pi) => {
+      const val = (sectionAnswers[si][pi] || '').trim();
+      const tag = !val ? ' [empty]'
+                : val.length < 8 ? ' [minimal]'
+                : '';
+      return `  ${p.label}: ${val || '[no answer]'}${tag}`;
+    }).join('\n');
+    return `Section ${s.num} — ${s.name}:\n${entries}`;
+  }).join('\n\n');
+
+  const prompt = `You have just read BIRTHMARKS, an archival identity instrument completed by a student aged 16–18. The student has assembled a record of six sections: Family & Name, Place & Language, Stories, Silences, How Others Read You, and What Continues.
+
+Here is the complete archive:
+
+${archiveText}
+
+Your task is to read this archive as a historian and archivist — not as a therapist, not as a teacher, not as a judge.
+
+The archive is evidence. Your reading identifies what is present, what is absent, what appears repeatedly, what is conspicuously avoided, and what the student carries without fully understanding.
+
+Rules:
+1. Every observation must be traceable to something in the archive — a specific answer, a specific silence, a specific word they used.
+2. [empty] and [minimal] entries are primary evidence. What is absent from an archive is as meaningful as what is present.
+3. If answers in the Silences or What Continues sections are thin or evasive, name that directly. Evasion in those sections is the most revealing data.
+4. Do not use therapeutic language: not 'authentic', not 'healing', not 'journey', not 'growth', not 'trauma'. Archivists do not use these words.
+5. Do not reassure. Do not praise. Do not moralise.
+6. Write in second person, directly to the student.
+7. Do not begin with 'You'. Find a different entry — a specific detail from their archive.
+8. Read across sections for patterns: a name that carries shame and a silence about family history and a story told repeatedly are connected evidence. Name the connection.
+9. The final sentence should locate the student in the archive — not direct them somewhere.
+
+The signature line of the project: "Some marks are visible. Others are carried in stories, silences, and assumptions." The reading should make the specific marks visible.
+
+Output format — exactly, no deviations:
+
+HEADLINE:
+[A phrase of 4–8 words drawn from or responding to the archive. Not a type. Not a verdict. An observation. It may be a fragment, a question, or a statement. It should feel like a title for this specific archive.]
+
+READING:
+[220–300 words. Specific. Grounded. Names inherited marks, recurring patterns, and significant absences. Reads across sections. Does not resolve. Does not end with direction or hope.]
+
+SIGNATURE:
+[One sentence naming the specific marks that continue — drawn from their actual answers in What Continues and elsewhere. Not the generic project line. Specific to this archive.]
+
+DISCUSSION:
+Q1: [A question derived from a specific pattern, contradiction, or gap across two or more sections]
+Q2: [A question derived from the Silences section — what was avoided or minimal there]
+Q3: [A question derived from the gap between Stories/Family and What Continues]`;
+
+  try {
+    const resp = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content.map(b => b.text || '').join('');
+
+    const headlineMatch  = text.match(/HEADLINE:\s*([\s\S]+?)(?=READING:|$)/i);
+    const readingMatch   = text.match(/READING:\s*([\s\S]+?)(?=SIGNATURE:|$)/i);
+    const signatureMatch = text.match(/SIGNATURE:\s*([\s\S]+?)(?=DISCUSSION:|$)/i);
+    const discussionMatch = text.match(/DISCUSSION:\s*([\s\S]+)/i);
+
+    showRecord(
+      headlineMatch   ? headlineMatch[1].trim()   : '—',
+      readingMatch    ? readingMatch[1].trim()    : text,
+      signatureMatch  ? signatureMatch[1].trim()  : '',
+      discussionMatch ? discussionMatch[1].trim() : ''
+    );
+  } catch(err) {
+    showRecord('The archive has been assembled.', 'The reading could not be completed, but the archive remains intact.', '', '');
+  }
+}
+
+function showRecord(headline, reading, signature, discussion) {
+  show('record');
+
+  // Stamp
+  const now = new Date();
+  document.getElementById('recordStamp').textContent =
+    document.getElementById('sessionId').textContent + '\n' +
+    now.toLocaleDateString('en-GB') + ' ' +
+    now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  // Build archive entries
+  const container = document.getElementById('archiveEntries');
+  container.innerHTML = '';
+
+  SECTIONS.forEach((s, si) => {
+    const entry = document.createElement('div');
+    entry.className = 'archive-entry';
+
+    const header = document.createElement('div');
+    header.className = 'archive-entry-header';
+
+    const name = document.createElement('div');
+    name.className = 'ae-section-name';
+    name.textContent = s.name;
+
+    const num = document.createElement('div');
+    num.className = 'ae-section-num';
+    num.textContent = `Section ${s.num}`;
+
+    header.appendChild(name);
+    header.appendChild(num);
+
+    const prompts = document.createElement('div');
+    prompts.className = 'archive-entry-prompts';
+
+    s.prompts.forEach((p, pi) => {
+      const row = document.createElement('div');
+      row.className = 'ae-prompt-row';
+
+      const q = document.createElement('div');
+      q.className = 'ae-prompt-q';
+      q.textContent = p.q;
+
+      const a = document.createElement('div');
+      a.className = 'ae-prompt-a';
+      a.textContent = (sectionAnswers[si][pi] || '').trim() || '[no entry]';
+
+      row.appendChild(q);
+      row.appendChild(a);
+      prompts.appendChild(row);
+    });
+
+    entry.appendChild(header);
+    entry.appendChild(prompts);
+    container.appendChild(entry);
+  });
+
+  // Reveal sequence
+  setTimeout(() => container.classList.add('visible'), 300);
+
+  setTimeout(() => {
+    document.getElementById('readingRule').classList.add('visible');
+    setTimeout(() => {
+      document.getElementById('readingLabel').classList.add('visible');
+      document.getElementById('headlineText').textContent = headline;
+      document.getElementById('portraitText').textContent = reading;
+      document.getElementById('signatureText').textContent = signature;
+      setTimeout(() => {
+        document.getElementById('headlineText').classList.add('visible');
+        setTimeout(() => document.getElementById('portraitText').classList.add('visible'), 600);
+        setTimeout(() => document.getElementById('signatureText').classList.add('visible'), 1400);
+      }, 300);
+    }, 500);
+  }, 1400);
+
+  // Discussion questions
+  if (discussion) {
+    const discList = document.getElementById('discussionList');
+    discList.innerHTML = '';
+    const lines = discussion.split('\n').filter(l => l.trim());
+    lines.forEach((line, i) => {
+      const cleaned = line.replace(/^Q\d+:\s*/i, '').trim();
+      if (!cleaned) return;
+      const item = document.createElement('div');
+      item.className = 'disc-item';
+      const num = document.createElement('div');
+      num.className = 'disc-num';
+      num.textContent = String(i + 1).padStart(2, '0');
+      const q = document.createElement('div');
+      q.className = 'disc-q';
+      q.textContent = cleaned;
+      item.appendChild(num);
+      item.appendChild(q);
+      discList.appendChild(item);
+    });
+    setTimeout(() => document.getElementById('discussionWrap').classList.add('visible'), 4200);
+  }
+
+  setTimeout(() => document.getElementById('recordFooter').classList.add('visible'), 5000);
+}
+
+function restart() {
+  sectionAnswers = SECTIONS.map(s => s.prompts.map(() => ''));
+  currentSection = 0;
+  document.getElementById('progFill').style.width = '0%';
+
+  ['archiveEntries','readingRule','readingLabel','headlineText',
+   'portraitText','signatureText','discussionWrap','recordFooter']
+    .forEach(id => document.getElementById(id).classList.remove('visible'));
+
+  document.getElementById('discussionList').innerHTML = '';
+
+  document.getElementById('sessionId').textContent =
+    'BM-' + Math.random().toString(36).slice(2,5).toUpperCase() + '-' +
+    Math.random().toString(36).slice(2,5).toUpperCase();
+
+  show('intro');
+}
+</script>
+</body>
+</html>
